@@ -9,4 +9,10 @@ Integration of [Modern-DI](https://github.com/modern-python/modern-di) to FastAP
 
 Usage example: [fastapi-sqlalchemy-template](https://github.com/modern-python/fastapi-sqlalchemy-template)
 
+## Part of `modern-python`
+
+Browse the full list of templates and libraries in
+[`modern-python`](https://github.com/modern-python) — see the org profile for the
+categorized index.
+
 ## 📚 [Documentation](https://modern-di.readthedocs.io)
