@@ -20,7 +20,7 @@ version = "0"
 
 [project.urls]
 repository = "https://github.com/modern-python/modern-di-fastapi"
-docs = "https://modern-di.readthedocs.io"
+docs = "https://modern-di.modern-python.org"
 
 [dependency-groups]
 dev = [
