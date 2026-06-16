@@ -21,11 +21,11 @@ def fetch_di_container(app_: fastapi.FastAPI) -> Container:
 
 @contextlib.asynccontextmanager
 async def _lifespan_manager(app_: fastapi.FastAPI) -> typing.AsyncIterator[None]:
-    container = fetch_di_container(app_)
-    try:
+    # ``async with`` reopens the root container on each startup (``__aenter__``)
+    # and closes it on shutdown, so a second lifespan cycle against the same
+    # container works instead of raising ContainerClosedError.
+    async with fetch_di_container(app_):
         yield
-    finally:
-        await container.close_async()
 
 
 def setup_di(app: fastapi.FastAPI, container: Container) -> Container:
