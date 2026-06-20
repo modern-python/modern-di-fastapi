@@ -90,4 +90,3 @@ Built on [`modern-di`](https://github.com/modern-python/modern-di), a dependency
 - [`modern-di-faststream`](https://github.com/modern-python/modern-di-faststream) — FastStream
 - [`modern-di-typer`](https://github.com/modern-python/modern-di-typer) — Typer
 - [`modern-di-pytest`](https://github.com/modern-python/modern-di-pytest) — pytest
-
