@@ -7,6 +7,7 @@
 [![CI](https://github.com/modern-python/modern-di-fastapi/actions/workflows/ci.yml/badge.svg)](https://github.com/modern-python/modern-di-fastapi/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/modern-python/modern-di-fastapi.svg)](https://github.com/modern-python/modern-di-fastapi/blob/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/modern-python/modern-di-fastapi)](https://github.com/modern-python/modern-di-fastapi/stargazers)
+[![Context7](https://img.shields.io/badge/Context7-docs-blue)](https://context7.com/modern-python/modern-di-fastapi)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![ty](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json)](https://github.com/astral-sh/ty)
