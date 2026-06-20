@@ -77,5 +77,7 @@ The framework `Request` / `WebSocket` are resolvable within DI via the pre-built
 
 ## Part of `modern-python`
 
+Built on [`modern-di`](https://github.com/modern-python/modern-di), a dependency-injection framework with IoC container and scopes.
+
 Browse the full list of templates and libraries in
 [`modern-python`](https://github.com/modern-python) — see the org profile for the categorized index.
