@@ -12,3 +12,11 @@ the *why* lives in the change bundle under
 
 Capability files and `glossary.md` are authored lazily — each appears when the
 first capability or term is worth pinning down.
+
+## Capabilities
+
+- [`container-lifecycle.md`](container-lifecycle.md) — wiring the container into
+  the app, the lifespan, and per-connection scoped child containers.
+- [`dependency-resolution.md`](dependency-resolution.md) — `FromDI` and how
+  endpoints declare and receive resolved dependencies.
+- [`glossary.md`](glossary.md) — the ubiquitous language.
