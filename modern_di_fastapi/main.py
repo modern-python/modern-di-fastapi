@@ -14,6 +14,12 @@ T_co = typing.TypeVar("T_co", covariant=True)
 fastapi_request_provider = providers.ContextProvider(scope=Scope.REQUEST, context_type=fastapi.Request)
 fastapi_websocket_provider = providers.ContextProvider(scope=Scope.SESSION, context_type=fastapi.WebSocket)
 
+# The single source of the connection-kind mapping. Each provider pairs a connection
+# type (``context_type``) with the scope its child container opens at; ``setup_di``
+# registers them and ``build_di_container`` dispatches off them. Add a connection
+# kind by adding its provider here — nothing else changes.
+_CONNECTION_PROVIDERS = (fastapi_request_provider, fastapi_websocket_provider)
+
 
 def fetch_di_container(app_: fastapi.FastAPI) -> Container:
     return typing.cast(Container, app_.state.di_container)
@@ -30,7 +36,7 @@ async def _lifespan_manager(app_: fastapi.FastAPI) -> typing.AsyncIterator[None]
 
 def setup_di(app: fastapi.FastAPI, container: Container) -> Container:
     app.state.di_container = container
-    container.providers_registry.add_providers(fastapi_request_provider, fastapi_websocket_provider)
+    container.providers_registry.add_providers(*_CONNECTION_PROVIDERS)
     old_lifespan_manager = app.router.lifespan_context
     app.router.lifespan_context = _merge_lifespan_context(
         old_lifespan_manager,
@@ -42,12 +48,11 @@ def setup_di(app: fastapi.FastAPI, container: Container) -> Container:
 async def build_di_container(connection: HTTPConnection) -> typing.AsyncIterator[Container]:
     context: dict[type[typing.Any], typing.Any] = {}
     scope = None
-    if isinstance(connection, fastapi.Request):
-        scope = fastapi_request_provider.scope
-        context[fastapi.Request] = connection
-    elif isinstance(connection, fastapi.WebSocket):
-        context[fastapi.WebSocket] = connection
-        scope = fastapi_websocket_provider.scope
+    for provider in _CONNECTION_PROVIDERS:
+        if isinstance(connection, provider.context_type):
+            context[provider.context_type] = connection
+            scope = provider.scope
+            break
     container = fetch_di_container(connection.app).build_child_container(context=context, scope=scope)
     try:
         yield container

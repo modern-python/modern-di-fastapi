@@ -26,10 +26,12 @@ off of.
 _Avoid_: request (a request is only one kind of connection)
 
 **Scope mapping**:
-The fixed correspondence this integration imposes between a connection kind and
-a `modern_di.Scope`: a `Request` opens a `REQUEST`-scoped child container; a
-`WebSocket` opens a `SESSION`-scoped one. Any other `HTTPConnection` gets no
-scope (`None`).
+The correspondence between a connection kind and a `modern_di.Scope`, sourced
+from the registered *context providers* (each carries its `context_type` and
+`scope`): a `Request` opens a `REQUEST`-scoped child container; a `WebSocket`
+opens a `SESSION`-scoped one. Any other `HTTPConnection` matches no provider and
+gets no scope (`None`). The providers are the single source — there is no
+separate hardcoded table.
 _Avoid_: scope resolution
 
 **Context provider**:
