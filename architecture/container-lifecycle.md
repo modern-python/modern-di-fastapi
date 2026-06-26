@@ -14,17 +14,19 @@ entry point an application calls at startup. It does three things:
 2. Registers the two *context providers*
    (`fastapi_request_provider`, `fastapi_websocket_provider`) on the container's
    `providers_registry`, so the live `Request` / `WebSocket` can be resolved.
-3. Chains an internal lifespan manager onto the app's existing
-   `lifespan_context` via `fastapi.routing._merge_lifespan_context`, preserving
-   any lifespan the app already had.
+3. Composes the container's open/close onto the app's existing
+   `lifespan_context` via `_compose_lifespan`, preserving any lifespan the app
+   already had (its startup/shutdown still run and its yielded state passes
+   through). The composition is our own — no dependency on FastAPI internals.
 
 It returns the same container for convenience. The application owns container
 construction (groups, overrides); `setup_di` only wires it in.
 
 ## Lifespan — open/close across cycles
 
-The chained `_lifespan_manager` runs `async with fetch_di_container(app):` — the
-root container's `__aenter__` opens it on startup and `__aexit__` closes it on
+The composed lifespan keeps the original as the outer context and opens the
+container inside it with `async with fetch_di_container(app):` — the root
+container's `__aenter__` opens it on startup and `__aexit__` closes it on
 shutdown. Using `async with` (rather than a one-shot open) means a **second
 lifespan cycle against the same container reopens it** instead of raising
 `ContainerClosedError`. This is what lets an app be started, stopped, and
