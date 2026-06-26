@@ -3,9 +3,9 @@ import dataclasses
 import typing
 
 import fastapi
-from fastapi.routing import _merge_lifespan_context
 from modern_di import Container, Scope, providers
 from starlette.requests import HTTPConnection
+from starlette.types import Lifespan
 
 
 T_co = typing.TypeVar("T_co", covariant=True)
@@ -25,23 +25,29 @@ def fetch_di_container(app_: fastapi.FastAPI) -> Container:
     return typing.cast(Container, app_.state.di_container)
 
 
-@contextlib.asynccontextmanager
-async def _lifespan_manager(app_: fastapi.FastAPI) -> typing.AsyncIterator[None]:
-    # ``async with`` reopens the root container on each startup (``__aenter__``)
-    # and closes it on shutdown, so a second lifespan cycle against the same
-    # container works instead of raising ContainerClosedError.
-    async with fetch_di_container(app_):
-        yield
+def _compose_lifespan(original: Lifespan[fastapi.FastAPI]) -> Lifespan[fastapi.FastAPI]:
+    """Wrap ``original`` so the root container opens/closes around it.
+
+    The original lifespan stays the outer context and its yielded state passes
+    straight through; the container is opened inside it. ``async with`` reopens the
+    container on each startup and closes it on shutdown, so a second lifespan cycle
+    against the same container works instead of raising ``ContainerClosedError``.
+    """
+
+    @contextlib.asynccontextmanager
+    async def composed(app_: fastapi.FastAPI) -> typing.AsyncIterator[typing.Mapping[str, typing.Any] | None]:
+        async with original(app_) as state, fetch_di_container(app_):
+            yield state
+
+    # ``Lifespan`` is a union of CM[None] | CM[Mapping]; it can't express our
+    # CM[Mapping | None], though that is exactly what a lifespan may yield.
+    return typing.cast(Lifespan[fastapi.FastAPI], composed)
 
 
 def setup_di(app: fastapi.FastAPI, container: Container) -> Container:
     app.state.di_container = container
     container.providers_registry.add_providers(*_CONNECTION_PROVIDERS)
-    old_lifespan_manager = app.router.lifespan_context
-    app.router.lifespan_context = _merge_lifespan_context(
-        old_lifespan_manager,
-        _lifespan_manager,
-    )
+    app.router.lifespan_context = _compose_lifespan(app.router.lifespan_context)
     return container
 
 
