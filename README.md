@@ -2,7 +2,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/modern-di-fastapi.svg)](https://pypi.org/project/modern-di-fastapi/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/modern-di-fastapi.svg)](https://pypi.org/project/modern-di-fastapi/)
-[![Downloads](https://img.shields.io/pypi/dm/modern-di-fastapi.svg)](https://pypistats.org/packages/modern-di-fastapi)
+[![Downloads](https://static.pepy.tech/badge/modern-di-fastapi/month)](https://pepy.tech/projects/modern-di-fastapi)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://github.com/modern-python/modern-di-fastapi/actions/workflows/ci.yml)
 [![CI](https://github.com/modern-python/modern-di-fastapi/actions/workflows/ci.yml/badge.svg)](https://github.com/modern-python/modern-di-fastapi/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/modern-python/modern-di-fastapi.svg)](https://github.com/modern-python/modern-di-fastapi/blob/main/LICENSE)
