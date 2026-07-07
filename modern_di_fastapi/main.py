@@ -46,7 +46,7 @@ def _compose_lifespan(original: Lifespan[fastapi.FastAPI]) -> Lifespan[fastapi.F
 
 def setup_di(app: fastapi.FastAPI, container: Container) -> Container:
     app.state.di_container = container
-    container.providers_registry.add_providers(*_CONNECTION_PROVIDERS)
+    container.add_providers(*_CONNECTION_PROVIDERS)
     app.router.lifespan_context = _compose_lifespan(app.router.lifespan_context)
     return container
 
@@ -73,9 +73,7 @@ class Dependency(typing.Generic[T_co]):
     async def __call__(
         self, request_container: typing.Annotated[Container, fastapi.Depends(build_di_container)]
     ) -> T_co:
-        if isinstance(self.dependency, providers.AbstractProvider):
-            return request_container.resolve_provider(self.dependency)
-        return request_container.resolve(dependency_type=self.dependency)
+        return request_container.resolve_dependency(self.dependency)
 
 
 def FromDI(dependency: providers.AbstractProvider[T_co] | type[T_co], *, use_cache: bool = True) -> T_co:  # noqa: N802
