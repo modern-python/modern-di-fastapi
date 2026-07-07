@@ -26,12 +26,10 @@ type, so the annotated parameter type stays accurate.
 `Dependency` is a frozen, slotted, generic dataclass holding the requested
 `dependency`. Its `__call__` is itself a FastAPI dependency: it depends on
 `build_di_container`, so it receives the *child container* for the current
-connection, then resolves against it:
-
-- **Provider** (`isinstance(..., AbstractProvider)`) →
-  `request_container.resolve_provider(self.dependency)`.
-- **Type** (anything else) →
-  `request_container.resolve(dependency_type=self.dependency)`.
+connection, then resolves against it via
+`request_container.resolve_dependency(self.dependency)` — a provider argument
+resolves by reference, a plain type resolves by type; overrides, caching, and
+suggestions are inherited from whichever it dispatches to.
 
 Because resolution flows through `build_di_container`, every `FromDI`
 dependency in a request shares that request's scoped container and its

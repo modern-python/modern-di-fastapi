@@ -12,8 +12,9 @@ entry point an application calls at startup. It does three things:
 1. Stores the container on `app.state.di_container` (read back by
    `fetch_di_container(app)`).
 2. Registers the two *context providers*
-   (`fastapi_request_provider`, `fastapi_websocket_provider`) on the container's
-   `providers_registry`, so the live `Request` / `WebSocket` can be resolved.
+   (`fastapi_request_provider`, `fastapi_websocket_provider`) via
+   `container.add_providers(...)`, so the live `Request` / `WebSocket` can be
+   resolved.
 3. Composes the container's open/close onto the app's existing
    `lifespan_context` via `_compose_lifespan`, preserving any lifespan the app
    already had (its startup/shutdown still run and its yielded state passes
