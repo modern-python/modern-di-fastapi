@@ -7,7 +7,7 @@ Guidance for agents working in `modern-di-fastapi` — the
 
 Before making a change, follow the **Quick path** in
 [`planning/README.md`](planning/README.md) — the authoritative planning
-convention. Pick a lane (Full / Lightweight / Tiny), create the change bundle
+convention. Pick a lane (Full / Lightweight / Tiny), create the change file
 under `planning/changes/` when the lane calls for one, and run
 `just check-planning` before pushing.
 
@@ -17,7 +17,7 @@ under `planning/changes/` when the lane calls for one, and run
 does **now** — one file per capability, plus `glossary.md`. **When a change
 alters a capability's behavior, update the matching
 `architecture/<capability>.md` in the same PR**, alongside the code; the *why*
-stays in the change bundle under `planning/changes/`.
+stays in the change file under `planning/changes/`.
 
 ## Build & checks
 
