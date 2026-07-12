@@ -19,6 +19,8 @@
 
 [Modern-DI](https://github.com/modern-python/modern-di) integration for [FastAPI](https://fastapi.tiangolo.com).
 
+Full guide: [FastAPI integration docs](https://modern-di.modern-python.org/integrations/fastapi/)
+
 Usage example: [fastapi-sqlalchemy-template](https://github.com/modern-python/fastapi-sqlalchemy-template)
 
 ## Installation
