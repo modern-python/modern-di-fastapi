@@ -22,7 +22,7 @@ version = "0"
 
 [project.urls]
 Homepage = "https://modern-di.modern-python.org"
-Documentation = "https://modern-di.modern-python.org"
+Documentation = "https://modern-di.modern-python.org/integrations/fastapi/"
 Repository = "https://github.com/modern-python/modern-di-fastapi"
 Issues = "https://github.com/modern-python/modern-di-fastapi/issues"
 Changelog = "https://github.com/modern-python/modern-di-fastapi/releases"
