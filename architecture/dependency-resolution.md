@@ -23,13 +23,15 @@ type, so the annotated parameter type stays accurate.
 
 ## The callable — `Dependency`
 
-`Dependency` is a frozen, slotted, generic dataclass holding the requested
-`dependency`. Its `__call__` is itself a FastAPI dependency: it depends on
-`build_di_container`, so it receives the *child container* for the current
-connection, then resolves against it via
-`request_container.resolve_dependency(self.dependency)` — a provider argument
-resolves by reference, a plain type resolves by type; overrides, caching, and
-suggestions are inherited from whichever it dispatches to.
+`Dependency` is a frozen, slotted, generic dataclass holding a
+`modern_di.integrations.Marker` wrapping the requested dependency. Its
+`__call__` is itself a FastAPI dependency: it depends on `build_di_container`,
+so it receives the *child container* for the current connection, then resolves
+against it via `self.marker.resolve(request_container)` — which calls
+`request_container.resolve_dependency(marker.dependency)` internally. A
+provider argument resolves by reference, a plain type resolves by type;
+overrides, caching, and suggestions are inherited from whichever it dispatches
+to.
 
 Because resolution flows through `build_di_container`, every `FromDI`
 dependency in a request shares that request's scoped container and its
