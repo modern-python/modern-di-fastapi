@@ -3,7 +3,7 @@ import dataclasses
 import typing
 
 import fastapi
-from modern_di import Container, Scope, providers
+from modern_di import Container, Scope, integrations, providers
 from starlette.requests import HTTPConnection
 from starlette.types import Lifespan
 
@@ -52,29 +52,25 @@ def setup_di(app: fastapi.FastAPI, container: Container) -> Container:
 
 
 async def build_di_container(connection: HTTPConnection) -> typing.AsyncIterator[Container]:
-    context: dict[type[typing.Any], typing.Any] = {}
-    scope = None
-    for provider in _CONNECTION_PROVIDERS:
-        if isinstance(connection, provider.context_type):
-            context[provider.context_type] = connection
-            scope = provider.scope
-            break
-    container = fetch_di_container(connection.app).build_child_container(context=context, scope=scope)
-    try:
+    match = integrations.classify_connection(connection, _CONNECTION_PROVIDERS)
+    async with fetch_di_container(connection.app).build_child_container(
+        scope=match.scope if match else None,
+        context=match.context if match else None,
+    ) as container:
         yield container
-    finally:
-        await container.close_async()
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
 class Dependency(typing.Generic[T_co]):
-    dependency: providers.AbstractProvider[T_co] | type[T_co]
+    marker: integrations.Marker[T_co]
 
     async def __call__(
         self, request_container: typing.Annotated[Container, fastapi.Depends(build_di_container)]
     ) -> T_co:
-        return request_container.resolve_dependency(self.dependency)
+        return self.marker.resolve(request_container)
 
 
 def FromDI(dependency: providers.AbstractProvider[T_co] | type[T_co], *, use_cache: bool = True) -> T_co:  # noqa: N802
-    return typing.cast(T_co, fastapi.Depends(dependency=Dependency(dependency), use_cache=use_cache))
+    return typing.cast(
+        T_co, fastapi.Depends(dependency=Dependency(integrations.Marker(dependency)), use_cache=use_cache)
+    )

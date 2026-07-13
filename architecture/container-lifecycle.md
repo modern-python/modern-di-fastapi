@@ -39,18 +39,21 @@ container instance.
 `build_di_container` is an async FastAPI dependency that yields a *child
 container* scoped to the current *connection*, then closes it:
 
-- It applies the *scope mapping* by walking the registered *context providers*
-  (`_CONNECTION_PROVIDERS`): the first whose `context_type` the connection is an
-  instance of supplies both the scope and the context key. So a `fastapi.Request`
-  → `Scope.REQUEST` with the request placed in `context[fastapi.Request]`; a
-  `fastapi.WebSocket` → `Scope.SESSION` with the socket in
-  `context[fastapi.WebSocket]`. Any other `HTTPConnection` matches no provider and
-  yields a child with `scope=None`. The providers are the single source — adding a
-  connection kind is adding a provider, with no change to this dispatch.
-- The child is built from the root container via
-  `build_child_container(context=..., scope=...)`.
-- After the endpoint returns, the `finally` block calls
-  `container.close_async()`, tearing down anything opened in that scope.
+- It applies the *scope mapping* via `modern_di.integrations.classify_connection`,
+  which walks the registered *context providers* (`_CONNECTION_PROVIDERS`): the
+  first whose `context_type` the connection is an instance of supplies both the
+  scope and the context key. So a `fastapi.Request` → `Scope.REQUEST` with the
+  request placed in `context[fastapi.Request]`; a `fastapi.WebSocket` →
+  `Scope.SESSION` with the socket in `context[fastapi.WebSocket]`. Any other
+  `HTTPConnection` matches no provider and yields a child with `scope=None`. The
+  providers are the single source — adding a connection kind is adding a
+  provider, with no change to this dispatch. The isinstance-over-tuple dispatch
+  itself lives in modern-di's integration kit, not here.
+- The child is opened as an `async with` block —
+  `Container.build_child_container(scope=..., context=...)` returns a container
+  that is already open, so entering it is a no-op.
+- Exiting the block closes the child container (`close_async`), including on
+  the exception path, tearing down anything opened in that scope.
 
 Finer scopes are reached by building further children from this one: an HTTP
 endpoint can `build_child_container()` again for `ACTION` scope, and a WebSocket
