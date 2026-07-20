@@ -41,9 +41,9 @@ def test_factories_action_scope(client: TestClient, app: fastapi.FastAPI) -> Non
     async def read_root(
         request_container: typing.Annotated[Container, fastapi.Depends(build_di_container)],
     ) -> None:
-        action_container = request_container.build_child_container()
-        action_factory_instance = action_container.resolve_provider(Dependencies.action_factory)
-        assert isinstance(action_factory_instance, DependentCreator)
+        with request_container.build_child_container() as action_container:
+            action_factory_instance = action_container.resolve_provider(Dependencies.action_factory)
+            assert isinstance(action_factory_instance, DependentCreator)
 
     response = client.get("/")
     assert response.status_code == status.HTTP_200_OK

@@ -34,9 +34,9 @@ async def test_factories_request_scope(client: TestClient, app: fastapi.FastAPI)
         websocket: fastapi.WebSocket,
         session_container: typing.Annotated[Container, fastapi.Depends(build_di_container)],
     ) -> None:
-        request_container = session_container.build_child_container()
-        request_factory_instance = request_container.resolve_provider(Dependencies.request_factory)
-        assert isinstance(request_factory_instance, DependentCreator)
+        with session_container.build_child_container() as request_container:
+            request_factory_instance = request_container.resolve_provider(Dependencies.request_factory)
+            assert isinstance(request_factory_instance, DependentCreator)
 
         await websocket.accept()
         await websocket.send_text("test")
