@@ -39,7 +39,7 @@ def test_setup_di_composes_with_existing_lifespan() -> None:
         events.append("shutdown")
 
     app = fastapi.FastAPI(lifespan=user_lifespan)
-    container = modern_di.Container(groups=[Dependencies], validate=True)
+    container = modern_di.Container(groups=[Dependencies])
     modern_di_fastapi.setup_di(app, container)
 
     @app.get("/")
