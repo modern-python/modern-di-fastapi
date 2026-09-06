@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 Guidance for agents working in `modern-di-fastapi` — the
 [modern-di](https://modern-di.modern-python.org) integration for FastAPI.
