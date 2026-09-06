@@ -31,7 +31,7 @@ uv add modern-di-fastapi      # or: pip install modern-di-fastapi
 
 ## Usage
 
-`setup_di` registers the container and builds a per-request child container automatically; `FromDI` resolves a provider (or type) into a route parameter.
+`setup_di` registers the container and builds a per-connection child container automatically; `FromDI` resolves a provider (or type) into a route parameter.
 
 ```python
 import dataclasses
@@ -73,10 +73,10 @@ The framework `Request` / `WebSocket` are resolvable within DI via the pre-built
 
 | Symbol | Description |
 |---|---|
-| `setup_di(app, container)` | Stores the container on `app.state` and appends a lifespan that closes it on shutdown (merges with any existing `lifespan=`) |
-| `FromDI(provider, *, use_cache=True)` | FastAPI `Depends` that resolves a provider (or type) from the per-request child container |
+| `setup_di(app, container)` | Stores the container on `app.state` and composes the container's open/close into the app lifespan (nesting inside any existing `lifespan=`) |
+| `FromDI(provider, *, use_cache=True)` | FastAPI `Depends` that resolves a provider (or type) from the per-connection child container |
 | `fetch_di_container(app)` | Returns the app-scoped container from `app.state` |
-| `build_di_container(connection)` | FastAPI `Depends` callable that yields the per-request child container — `REQUEST` scope for an HTTP request, `SESSION` scope for a WebSocket |
+| `build_di_container(connection)` | FastAPI `Depends` callable that yields the per-connection child container — `REQUEST` scope for an HTTP request, `SESSION` scope for a WebSocket |
 | `fastapi_request_provider` | `ContextProvider` for the current `fastapi.Request` |
 | `fastapi_websocket_provider` | `ContextProvider` for the current `fastapi.WebSocket` |
 

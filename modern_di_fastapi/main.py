@@ -65,9 +65,9 @@ class Dependency(typing.Generic[T_co]):
     marker: integrations.Marker[T_co]
 
     async def __call__(
-        self, request_container: typing.Annotated[Container, fastapi.Depends(build_di_container)]
+        self, connection_container: typing.Annotated[Container, fastapi.Depends(build_di_container)]
     ) -> T_co:
-        return self.marker.resolve(request_container)
+        return self.marker.resolve(connection_container)
 
 
 def FromDI(dependency: providers.AbstractProvider[T_co] | type[T_co], *, use_cache: bool = True) -> T_co:  # noqa: N802

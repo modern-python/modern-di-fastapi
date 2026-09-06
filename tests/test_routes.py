@@ -39,9 +39,9 @@ def test_context_provider(client: TestClient, app: fastapi.FastAPI) -> None:
 def test_factories_action_scope(client: TestClient, app: fastapi.FastAPI) -> None:
     @app.get("/")
     async def read_root(
-        request_container: typing.Annotated[Container, fastapi.Depends(build_di_container)],
+        connection_container: typing.Annotated[Container, fastapi.Depends(build_di_container)],
     ) -> None:
-        with request_container.build_child_container() as action_container:
+        with connection_container.build_child_container() as action_container:
             action_factory_instance = action_container.resolve_provider(Dependencies.action_factory)
             assert isinstance(action_factory_instance, DependentCreator)
 
