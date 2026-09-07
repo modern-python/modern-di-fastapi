@@ -82,7 +82,7 @@ The framework `Request` / `WebSocket` are resolvable within DI via the pre-built
 
 ## 📦 [PyPI](https://pypi.org/project/modern-di-fastapi)
 
-## 📝 [License](LICENSE)
+## 📝 [License](https://github.com/modern-python/modern-di-fastapi/blob/main/LICENSE)
 
 ## Part of `modern-python`
 
