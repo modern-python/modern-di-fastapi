@@ -22,7 +22,14 @@ _CONNECTION_PROVIDERS = (fastapi_request_provider, fastapi_websocket_provider)
 
 
 def fetch_di_container(app_: fastapi.FastAPI) -> Container:
-    return typing.cast(Container, app_.state.di_container)
+    try:
+        return typing.cast(Container, app_.state.di_container)
+    except AttributeError:
+        msg = (
+            "No modern-di container found on the app. "
+            "Call setup_di(app, container) before using FromDI or fetch_di_container."
+        )
+        raise RuntimeError(msg) from None
 
 
 def _compose_lifespan(original: Lifespan[fastapi.FastAPI]) -> Lifespan[fastapi.FastAPI]:
