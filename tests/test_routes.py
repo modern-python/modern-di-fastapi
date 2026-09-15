@@ -1,6 +1,7 @@
 import typing
 
 import fastapi
+import pytest
 from modern_di import Container
 from starlette import status
 from starlette.testclient import TestClient
@@ -48,3 +49,13 @@ def test_factories_action_scope(client: TestClient, app: fastapi.FastAPI) -> Non
     response = client.get("/")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() is None
+
+
+def test_from_di_without_setup_di_raises_clear_error() -> None:
+    app = fastapi.FastAPI()
+
+    @app.get("/")
+    async def read_root(instance: typing.Annotated[SimpleCreator, FromDI(SimpleCreator)]) -> None: ...
+
+    with TestClient(app=app) as client, pytest.raises(RuntimeError, match=r"setup_di\(app, container\)"):
+        client.get("/")
