@@ -1,3 +1,4 @@
+import collections.abc
 import contextlib
 import dataclasses
 import typing
@@ -42,7 +43,7 @@ def _compose_lifespan(original: Lifespan[fastapi.FastAPI]) -> Lifespan[fastapi.F
     """
 
     @contextlib.asynccontextmanager
-    async def composed(app_: fastapi.FastAPI) -> typing.AsyncIterator[typing.Mapping[str, typing.Any] | None]:
+    async def composed(app_: fastapi.FastAPI) -> collections.abc.AsyncGenerator[typing.Mapping[str, typing.Any] | None]:
         async with original(app_) as state, fetch_di_container(app_):
             yield state
 
