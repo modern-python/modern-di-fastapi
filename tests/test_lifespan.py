@@ -1,3 +1,4 @@
+import collections.abc
 import contextlib
 import typing
 
@@ -32,7 +33,7 @@ def test_setup_di_composes_with_existing_lifespan() -> None:
     events: list[str] = []
 
     @contextlib.asynccontextmanager
-    async def user_lifespan(app_: fastapi.FastAPI) -> typing.AsyncIterator[dict[str, str]]:
+    async def user_lifespan(app_: fastapi.FastAPI) -> collections.abc.AsyncGenerator[dict[str, str]]:
         assert isinstance(app_, fastapi.FastAPI)
         events.append("startup")
         yield {"marker": "from-user-lifespan"}
