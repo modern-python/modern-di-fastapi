@@ -69,13 +69,29 @@ async def index(user_service: UserService = FromDI(Dependencies.user_service)) -
 
 The framework `Request` / `WebSocket` are resolvable within DI via the pre-built `fastapi_request_provider` / `fastapi_websocket_provider` context providers.
 
-An app mounted under another with `app.mount` can call `setup_di` with its own container, and its routes resolve from that container. Starlette runs only the outermost app's lifespan, so the outer app's lifespan also opens and closes the root container of every mounted app that called `setup_di`, including apps under `Host` routes, apps mounted with `Mount(..., middleware=[...])`, and apps mounted more than one level deep. It looks for them at startup, so mounts added after `setup_di` are included. Each container is opened once and closed at shutdown, after your lifespan code. The mounted app's own lifespan function still does not run.
+An app mounted under another with `app.mount` can call `setup_di` with its own container, and its routes resolve from that container. Starlette runs only the outermost app's lifespan, so the outer app's lifespan also opens and closes the root container of every mounted app that called `setup_di`, including apps under `Host` routes, apps mounted with `Mount(..., middleware=[...])`, and apps mounted more than one level deep. It looks for them at startup, so mounts added after `setup_di` are included. Each container is opened once and closed at shutdown, after your lifespan code. The mounted app's own lifespan function still does not run. A mounted app whose `setup_di` was called with `manage_lifespan=False` keeps its root out of this.
+
+### Sharing a container
+
+Pass `manage_lifespan=False` when something else owns the root container, for example one container shared by several apps. `setup_di` then never opens or closes the root, and you do. It still registers its providers and still opens and closes a child container for each connection.
+
+```python
+import uvicorn
+
+container = Container(groups=[Dependencies])
+setup_di(app, container, manage_lifespan=False)
+
+
+async def main() -> None:
+    async with container:
+        await uvicorn.Server(uvicorn.Config(app)).serve()
+```
 
 ## API
 
 | Symbol | Description |
 |---|---|
-| `setup_di(app, container)` | Stores the container on `app.state` and composes the container's open/close into the app lifespan (nesting inside any existing `lifespan=`) |
+| `setup_di(app, container, *, manage_lifespan=True)` | Stores the container on `app.state` and composes the container's open/close into the app lifespan (nesting inside any existing `lifespan=`). With `manage_lifespan=False` the lifespan leaves the root alone and you open and close it |
 | `FromDI(dependency, *, use_cache=True)` | FastAPI `Depends` that resolves a provider (or type) from the per-connection child container. Raises `RuntimeError` naming `setup_di` when a request reaches it without `setup_di` called |
 | `fetch_di_container(app)` | Returns the app-scoped container from `app.state`. Raises `RuntimeError` naming `setup_di` when called without `setup_di` called |
 | `build_di_container(connection)` | FastAPI `Depends` callable that yields the per-connection child container: `REQUEST` scope for an HTTP request, `SESSION` scope for a WebSocket |

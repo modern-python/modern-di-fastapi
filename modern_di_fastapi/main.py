@@ -34,6 +34,12 @@ def fetch_di_container(app_: fastapi.FastAPI) -> Container:
         raise RuntimeError(msg) from None
 
 
+def _managed_root(app_: fastapi.FastAPI) -> collections.abc.Iterator[Container]:
+    container = getattr(app_.state, "di_container", None)
+    if container is not None and getattr(app_.state, "di_manage_lifespan", True):
+        yield container
+
+
 def _mounted_containers(routes: collections.abc.Iterable[BaseRoute]) -> collections.abc.Iterator[Container]:
     for route in routes:
         if not isinstance(route, Mount | Host):
@@ -41,12 +47,7 @@ def _mounted_containers(routes: collections.abc.Iterable[BaseRoute]) -> collecti
         # Mount(middleware=...) wraps route.app; Starlette keeps the unwrapped app on the private _base_app.
         app_ = getattr(route, "_base_app", route.app)
         if isinstance(app_, fastapi.FastAPI):
-            try:
-                container = fetch_di_container(app_)
-            except RuntimeError:
-                pass
-            else:
-                yield container
+            yield from _managed_root(app_)
         yield from _mounted_containers(route.routes)
 
 
@@ -60,14 +61,15 @@ def _compose_lifespan(original: Lifespan[fastapi.FastAPI]) -> Lifespan[fastapi.F
 
     Starlette runs only the outermost app's lifespan, so the root containers of
     mounted apps that called ``setup_di`` are opened and closed here too. The
-    routes are walked at startup, and each container is entered once.
+    routes are walked at startup, and each container is entered once. An app whose
+    ``setup_di`` got ``manage_lifespan=False`` has its root left alone.
     """
 
     @contextlib.asynccontextmanager
     async def composed(app_: fastapi.FastAPI) -> collections.abc.AsyncGenerator[typing.Mapping[str, typing.Any] | None]:
         async with original(app_) as state, contextlib.AsyncExitStack() as stack:
             entered: list[Container] = []
-            for container in (fetch_di_container(app_), *_mounted_containers(app_.routes)):
+            for container in (*_managed_root(app_), *_mounted_containers(app_.routes)):
                 if not any(container is seen for seen in entered):
                     entered.append(container)
                     await stack.enter_async_context(container)
@@ -78,8 +80,9 @@ def _compose_lifespan(original: Lifespan[fastapi.FastAPI]) -> Lifespan[fastapi.F
     return typing.cast(Lifespan[fastapi.FastAPI], composed)
 
 
-def setup_di(app: fastapi.FastAPI, container: Container) -> Container:
+def setup_di(app: fastapi.FastAPI, container: Container, *, manage_lifespan: bool = True) -> Container:
     app.state.di_container = container
+    app.state.di_manage_lifespan = manage_lifespan
     container.add_providers(*_CONNECTION_PROVIDERS)
     app.router.lifespan_context = _compose_lifespan(app.router.lifespan_context)
     return container
