@@ -69,7 +69,7 @@ async def index(user_service: UserService = FromDI(Dependencies.user_service)) -
 
 The framework `Request` / `WebSocket` are resolvable within DI via the pre-built `fastapi_request_provider` / `fastapi_websocket_provider` context providers.
 
-An app mounted under another with `app.mount` can call `setup_di` with its own container, and its routes resolve from that container. Starlette runs only the outermost app's lifespan, so the outer app's lifespan also opens and closes the root container of every mounted app that called `setup_di`, including apps under `Host` routes and apps mounted more than one level deep. It looks for them at startup, so mounts added after `setup_di` are included. Each container is opened once and closed at shutdown, after your lifespan code. The mounted app's own lifespan function still does not run.
+An app mounted under another with `app.mount` can call `setup_di` with its own container, and its routes resolve from that container. Starlette runs only the outermost app's lifespan, so the outer app's lifespan also opens and closes the root container of every mounted app that called `setup_di`, including apps under `Host` routes, apps mounted with `Mount(..., middleware=[...])`, and apps mounted more than one level deep. It looks for them at startup, so mounts added after `setup_di` are included. Each container is opened once and closed at shutdown, after your lifespan code. The mounted app's own lifespan function still does not run.
 
 ## API
 
