@@ -10,13 +10,13 @@ A term is listed only when there is a synonym to reject, or a meaning subtle eno
 docs must agree on it. General programming vocabulary does not belong here, however heavily this
 package uses it.
 
-The domain terms are `modern-di`'s — `Container` (root and child), `Provider`, `Group`, `Scope`,
+The domain terms are `modern-di`'s: `Container` (root and child), `Provider`, `Group`, `Scope`,
 `Resolution`, `Override`, `Connection`. That project's `CONTEXT.md` is the authority for all of
 them; nothing here redefines one. FastAPI's are FastAPI's: dependency, `Depends`, router, request,
 WebSocket. The two below are this package's own.
 
 **Per-connection container**:
-The child container `build_di_container` opens for one connection and closes when it ends —
+The child container `build_di_container` opens for one connection and closes when it ends:
 `REQUEST`-scoped for a `fastapi.Request`, `SESSION`-scoped for a `fastapi.WebSocket`. Every `FromDI`
 parameter in one handler resolves from the same one.
 _Avoid_: per-request container, request container. A WebSocket's is `SESSION`-scoped, so "request"
@@ -30,7 +30,7 @@ finalizers run last. The original's yielded state passes through untouched. It a
 called `setup_di`, since Starlette never runs a mounted app's lifespan. An app whose `setup_di` got
 `manage_lifespan=False` keeps its root out of the composed lifespan, whether it is the outer app or
 a mounted one; the user opens and closes that root.
-_Avoid_: merged lifespan — "merge" is FastAPI's own word for the private helper this package
+_Avoid_: merged lifespan. "Merge" is FastAPI's own word for the private helper this package
 deliberately does not use, which also merges the two yielded states
 ([ADR-0001](docs/adr/0001-own-the-lifespan-composition.md)). Also avoid appended lifespan: the
 app's lifespan runs *inside* the container's open/close.
