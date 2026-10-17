@@ -4,9 +4,12 @@ import fastapi
 from modern_di import Container, Group, Scope, providers
 from starlette import status
 from starlette.applications import Starlette
+from starlette.middleware import Middleware
 from starlette.responses import PlainTextResponse
 from starlette.routing import Host, Mount, Route
 from starlette.testclient import TestClient
+from starlette.types import ASGIApp, Receive, Send
+from starlette.types import Scope as ASGIScope
 
 from modern_di_fastapi import FromDI, setup_di
 
@@ -38,6 +41,14 @@ def _container(label: str, events: list[str]) -> _CountingContainer:
     return _CountingContainer(groups=[Values])
 
 
+class _PassthroughMiddleware:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
+        await self.app(scope, receive, send)
+
+
 async def _view(value: typing.Annotated[str, FromDI(str)]) -> PlainTextResponse:
     return PlainTextResponse(value)
 
@@ -61,6 +72,19 @@ def test_mounted_container_is_finalized_at_shutdown() -> None:
 
     assert "inner finalized" in events
     assert inner_container.closed
+
+
+def test_container_of_app_mounted_with_middleware_is_finalized() -> None:
+    events: list[str] = []
+    inner_container = _container("inner", events)
+    mount = Mount("/sub", app=_app(inner_container), middleware=[Middleware(_PassthroughMiddleware)])
+    outer = _app(_container("outer", events), [mount])
+
+    with TestClient(outer) as client:
+        assert client.get("/sub/x").text == "inner"
+
+    assert "inner finalized" in events
+    assert inner_container.closes == 1
 
 
 def test_container_mounted_two_levels_deep_is_closed() -> None:

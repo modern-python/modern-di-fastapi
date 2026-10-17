@@ -38,9 +38,11 @@ def _mounted_containers(routes: collections.abc.Iterable[BaseRoute]) -> collecti
     for route in routes:
         if not isinstance(route, Mount | Host):
             continue
-        if isinstance(route.app, fastapi.FastAPI):
+        # Mount(middleware=...) wraps route.app; Starlette keeps the unwrapped app on the private _base_app.
+        app_ = getattr(route, "_base_app", route.app)
+        if isinstance(app_, fastapi.FastAPI):
             try:
-                container = fetch_di_container(route.app)
+                container = fetch_di_container(app_)
             except RuntimeError:
                 pass
             else:
