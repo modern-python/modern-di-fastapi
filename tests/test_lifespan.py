@@ -111,3 +111,33 @@ async def test_manage_lifespan_false_lets_the_user_own_the_root() -> None:
         assert finalized == []
 
     assert finalized == ["app"]
+
+
+def test_user_lifespan_runs_inside_the_open_root() -> None:
+    events: list[str] = []
+
+    class Finalized(Group):
+        value = providers.Factory(
+            scope=Scope.APP,
+            creator=lambda: "app",
+            bound_type=str,
+            cache=providers.CacheSettings(finalizer=lambda value: events.append(f"{value} finalized")),
+        )
+
+    container = modern_di.Container(groups=[Dependencies, Finalized])
+
+    @contextlib.asynccontextmanager
+    async def user_lifespan(_: fastapi.FastAPI) -> collections.abc.AsyncGenerator[None]:
+        events.append(f"startup {container.resolve(str)}")
+        yield
+        events.append(f"shutdown {container.resolve(str)}")
+
+    app = fastapi.FastAPI(lifespan=user_lifespan)
+    modern_di_fastapi.setup_di(app, container)
+
+    cycles = 2
+    for _ in range(cycles):
+        with TestClient(app=app):
+            pass
+
+    assert events == ["startup app", "shutdown app", "app finalized"] * cycles

@@ -54,26 +54,30 @@ def _mounted_containers(routes: collections.abc.Iterable[BaseRoute]) -> collecti
 def _compose_lifespan(original: Lifespan[fastapi.FastAPI]) -> Lifespan[fastapi.FastAPI]:
     """Wrap ``original`` so the root container opens/closes around it.
 
-    The original lifespan stays the outer context and its yielded state passes
-    straight through; the container is opened inside it. ``async with`` reopens the
-    container on each startup and closes it on shutdown, so a second lifespan cycle
-    against the same container works instead of raising ``ContainerClosedError``.
+    The container is the outer context: it opens before the original lifespan's
+    startup code and closes after its shutdown code, so that code can resolve
+    ``APP``-scoped dependencies. The original's yielded state passes straight
+    through. ``async with`` reopens the container on each startup and closes it on
+    shutdown, so a second lifespan cycle against the same container works instead
+    of raising ``ContainerClosedError``.
 
     Starlette runs only the outermost app's lifespan, so the root containers of
     mounted apps that called ``setup_di`` are opened and closed here too. The
-    routes are walked at startup, and each container is entered once. An app whose
-    ``setup_di`` got ``manage_lifespan=False`` has its root left alone.
+    routes are walked at startup, before the original's startup code, and each
+    container is entered once. An app whose ``setup_di`` got
+    ``manage_lifespan=False`` has its root left alone.
     """
 
     @contextlib.asynccontextmanager
     async def composed(app_: fastapi.FastAPI) -> collections.abc.AsyncGenerator[typing.Mapping[str, typing.Any] | None]:
-        async with original(app_) as state, contextlib.AsyncExitStack() as stack:
+        async with contextlib.AsyncExitStack() as stack:
             entered: list[Container] = []
             for container in (*_managed_root(app_), *_mounted_containers(app_.routes)):
                 if not any(container is seen for seen in entered):
                     entered.append(container)
                     await stack.enter_async_context(container)
-            yield state
+            async with original(app_) as state:
+                yield state
 
     # ``Lifespan`` is a union of CM[None] | CM[Mapping]; it can't express our
     # CM[Mapping | None], though that is exactly what a lifespan may yield.

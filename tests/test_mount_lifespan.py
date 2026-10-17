@@ -1,3 +1,5 @@
+import collections.abc
+import contextlib
 import typing
 
 import fastapi
@@ -86,6 +88,23 @@ def test_mounted_container_with_manage_lifespan_false_is_left_open() -> None:
 
     assert "inner finalized" not in events
     assert not inner_container.closed
+
+
+def test_outer_manage_lifespan_false_still_closes_mounted_roots() -> None:
+    events: list[str] = []
+    inner_container = _container("inner", events)
+    outer_container = _container("outer", events)
+    outer = _app(routes=[Mount("/sub", app=_app(inner_container))])
+    setup_di(outer, outer_container, manage_lifespan=False)
+
+    with TestClient(outer) as client:
+        assert client.get("/sub/x").text == "inner"
+        assert client.get("/x").text == "outer"
+
+    assert inner_container.closed
+    assert "inner finalized" in events
+    assert not outer_container.closed
+    assert "outer finalized" not in events
 
 
 def test_container_of_app_mounted_with_middleware_is_finalized() -> None:
@@ -200,3 +219,22 @@ def test_mounted_container_reopens_across_lifespan_cycles() -> None:
 
     assert events.count("inner finalized") == cycles
     assert inner_container.closes == cycles
+
+
+def test_outer_lifespan_runs_inside_the_open_mounted_container() -> None:
+    events: list[str] = []
+    inner_container = _container("inner", events)
+
+    @contextlib.asynccontextmanager
+    async def user_lifespan(_: fastapi.FastAPI) -> collections.abc.AsyncGenerator[None]:
+        events.append(f"startup {inner_container.resolve(str)}")
+        yield
+        events.append(f"shutdown {inner_container.resolve(str)}")
+
+    outer = fastapi.FastAPI(lifespan=user_lifespan, routes=[Mount("/sub", app=_app(inner_container))])
+    setup_di(outer, _container("outer", events))
+
+    with TestClient(outer):
+        pass
+
+    assert events == ["inner created", "startup inner", "shutdown inner", "inner finalized"]

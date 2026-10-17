@@ -23,13 +23,14 @@ _Avoid_: per-request container, request container. A WebSocket's is `SESSION`-sc
 names one of the two kinds while reading as the wrong scope for the other.
 
 **Composed lifespan**:
-The app's own lifespan with the container's open/close nested inside it, installed by `setup_di`
-onto `app.router.lifespan_context`. The original stays the outer context and its yielded state
-passes through untouched. It also opens and closes the root containers of mounted FastAPI apps that
+The app's own lifespan nested inside the container's open/close, installed by `setup_di` onto
+`app.router.lifespan_context`. The container opens before the original's startup code and closes
+after its shutdown code, so that code can resolve `APP`-scoped dependencies and the `APP`
+finalizers run last. The original's yielded state passes through untouched. It also opens and closes the root containers of mounted FastAPI apps that
 called `setup_di`, since Starlette never runs a mounted app's lifespan. An app whose `setup_di` got
 `manage_lifespan=False` keeps its root out of the composed lifespan, whether it is the outer app or
 a mounted one; the user opens and closes that root.
 _Avoid_: merged lifespan — "merge" is FastAPI's own word for the private helper this package
 deliberately does not use, which also merges the two yielded states
 ([ADR-0001](docs/adr/0001-own-the-lifespan-composition.md)). Also avoid appended lifespan: the
-container's open/close runs *inside* the app's, not after it.
+app's lifespan runs *inside* the container's open/close.
