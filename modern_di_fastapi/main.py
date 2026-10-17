@@ -6,6 +6,7 @@ import typing
 import fastapi
 from modern_di import Container, Scope, integrations, providers
 from starlette.requests import HTTPConnection
+from starlette.routing import BaseRoute, Host, Mount
 from starlette.types import Lifespan
 
 
@@ -33,6 +34,20 @@ def fetch_di_container(app_: fastapi.FastAPI) -> Container:
         raise RuntimeError(msg) from None
 
 
+def _mounted_containers(routes: collections.abc.Iterable[BaseRoute]) -> collections.abc.Iterator[Container]:
+    for route in routes:
+        if not isinstance(route, Mount | Host):
+            continue
+        if isinstance(route.app, fastapi.FastAPI):
+            try:
+                container = fetch_di_container(route.app)
+            except RuntimeError:
+                pass
+            else:
+                yield container
+        yield from _mounted_containers(route.routes)
+
+
 def _compose_lifespan(original: Lifespan[fastapi.FastAPI]) -> Lifespan[fastapi.FastAPI]:
     """Wrap ``original`` so the root container opens/closes around it.
 
@@ -40,11 +55,20 @@ def _compose_lifespan(original: Lifespan[fastapi.FastAPI]) -> Lifespan[fastapi.F
     straight through; the container is opened inside it. ``async with`` reopens the
     container on each startup and closes it on shutdown, so a second lifespan cycle
     against the same container works instead of raising ``ContainerClosedError``.
+
+    Starlette runs only the outermost app's lifespan, so the root containers of
+    mounted apps that called ``setup_di`` are opened and closed here too. The
+    routes are walked at startup, and each container is entered once.
     """
 
     @contextlib.asynccontextmanager
     async def composed(app_: fastapi.FastAPI) -> collections.abc.AsyncGenerator[typing.Mapping[str, typing.Any] | None]:
-        async with original(app_) as state, fetch_di_container(app_):
+        async with original(app_) as state, contextlib.AsyncExitStack() as stack:
+            entered: list[Container] = []
+            for container in (fetch_di_container(app_), *_mounted_containers(app_.routes)):
+                if not any(container is seen for seen in entered):
+                    entered.append(container)
+                    await stack.enter_async_context(container)
             yield state
 
     # ``Lifespan`` is a union of CM[None] | CM[Mapping]; it can't express our
