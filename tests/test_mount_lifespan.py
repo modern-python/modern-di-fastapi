@@ -74,6 +74,20 @@ def test_mounted_container_is_finalized_at_shutdown() -> None:
     assert inner_container.closed
 
 
+def test_mounted_container_with_manage_lifespan_false_is_left_open() -> None:
+    events: list[str] = []
+    inner_container = _container("inner", events)
+    inner = _app()
+    setup_di(inner, inner_container, manage_lifespan=False)
+    outer = _app(_container("outer", events), [Mount("/sub", app=inner)])
+
+    with TestClient(outer) as client:
+        assert client.get("/sub/x").text == "inner"
+
+    assert "inner finalized" not in events
+    assert not inner_container.closed
+
+
 def test_container_of_app_mounted_with_middleware_is_finalized() -> None:
     events: list[str] = []
     inner_container = _container("inner", events)
