@@ -98,9 +98,10 @@ async def main() -> None:
 | `fastapi_request_provider` | `ContextProvider` for the current `fastapi.Request` (`REQUEST` scope) |
 | `fastapi_websocket_provider` | `ContextProvider` for the current `fastapi.WebSocket` (`SESSION` scope) |
 
-## 📦 [PyPI](https://pypi.org/project/modern-di-fastapi)
+## Links
 
-## 📝 [License](https://github.com/modern-python/modern-di-fastapi/blob/main/LICENSE)
+- [PyPI](https://pypi.org/project/modern-di-fastapi)
+- [License](https://github.com/modern-python/modern-di-fastapi/blob/main/LICENSE)
 
 ## Part of `modern-python`
 
