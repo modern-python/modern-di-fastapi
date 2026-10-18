@@ -1,8 +1,10 @@
 import collections.abc
 import contextlib
 import dataclasses
+import logging
 import typing
 
+import anyio
 import fastapi
 from modern_di import Container, Scope, integrations, providers
 from starlette.requests import HTTPConnection
@@ -21,6 +23,8 @@ fastapi_websocket_provider = providers.ContextProvider(scope=Scope.SESSION, cont
 # registers them and ``build_di_container`` dispatches off them. Add a connection
 # kind by adding its provider here — nothing else changes.
 _CONNECTION_PROVIDERS = (fastapi_request_provider, fastapi_websocket_provider)
+_CHILD_CLOSE_TIMEOUT = 10.0
+_logger = logging.getLogger(__name__)
 
 
 def fetch_di_container(app_: fastapi.FastAPI) -> Container:
@@ -94,11 +98,20 @@ def setup_di(app: fastapi.FastAPI, container: Container, *, manage_lifespan: boo
 
 async def build_di_container(connection: HTTPConnection) -> typing.AsyncIterator[Container]:
     match = integrations.classify_connection(connection, _CONNECTION_PROVIDERS)
-    async with fetch_di_container(connection.app).build_child_container(
+    container = fetch_di_container(connection.app).build_child_container(
         scope=match.scope if match else None,
         context=match.context if match else None,
-    ) as container:
+    )
+    try:
         yield container
+    finally:
+        with anyio.move_on_after(_CHILD_CLOSE_TIMEOUT, shield=True) as close_scope:
+            await container.close_async()
+        if close_scope.cancel_called:
+            _logger.warning(
+                "Closing the child container did not finish within %s s; its remaining finalizers did not run",
+                _CHILD_CLOSE_TIMEOUT,
+            )
 
 
 @dataclasses.dataclass(slots=True, frozen=True)
