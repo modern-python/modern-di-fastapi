@@ -107,7 +107,7 @@ async def build_di_container(connection: HTTPConnection) -> typing.AsyncIterator
     finally:
         with anyio.move_on_after(_CHILD_CLOSE_TIMEOUT, shield=True) as close_scope:
             await container.close_async()
-        if close_scope.cancelled_caught:
+        if close_scope.cancel_called:
             _logger.warning(
                 "Closing the child container did not finish within %s s; its remaining finalizers did not run",
                 _CHILD_CLOSE_TIMEOUT,

@@ -50,7 +50,11 @@ def _app(log: list[str], *, second_finalizer_delay: float) -> fastapi.FastAPI:
 
 async def _call_cancelled_mid_handler(app: fastapi.FastAPI) -> None:
     async def receive() -> dict[str, typing.Any]:
-        return {"type": "http.request", "body": b"", "more_body": False}
+        return {
+            "type": "http.request",
+            "body": b"",
+            "more_body": False,
+        }  # pragma: no cover -- GET handlers never read the body
 
     async def send(_: typing.Any) -> None: ...  # noqa: ANN401
 
