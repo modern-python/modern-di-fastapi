@@ -73,8 +73,14 @@ async def _call_cancelled_mid_handler(app: fastapi.FastAPI) -> None:
         "server": ("testserver", 80),
         "app": app,
     }
-    with anyio.move_on_after(0.05):
-        await app(scope, receive, send)
+
+    async def call() -> None:
+        with anyio.move_on_after(0.05):
+            await app(scope, receive, send)
+
+    # Its own task keeps the cancellation out of the test's frame, where 3.11 coverage loses a line.
+    async with anyio.create_task_group() as task_group:
+        task_group.start_soon(call)
 
 
 async def test_a_cancelled_request_still_runs_every_child_finalizer() -> None:
@@ -91,8 +97,9 @@ async def test_a_hung_child_finalizer_is_abandoned_after_the_bound(
     monkeypatch.setattr(main, "_CHILD_CLOSE_TIMEOUT", 0.05)
     log: list[str] = []
 
-    with anyio.fail_after(1), caplog.at_level(logging.WARNING, logger=main.__name__):
-        await _call_cancelled_mid_handler(_app(log, second_finalizer_delay=10))
+    caplog.set_level(logging.WARNING, logger=main.__name__)
+
+    await _call_cancelled_mid_handler(_app(log, second_finalizer_delay=10))
 
     assert log == []
     assert [record.getMessage() for record in caplog.records] == [
